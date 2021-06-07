@@ -1,3 +1,5 @@
+# Scripts to download or generate data
+
 # -*- coding: utf-8 -*-
 import click
 import logging
