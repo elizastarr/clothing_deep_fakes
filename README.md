@@ -1,5 +1,4 @@
-## Resleeve Assignment
-Virtual Try On using Generative Adversarial Networks (GANs)
+## Virtual Try On using Generative Adversarial Networks (GANs)
 
 
 ---
