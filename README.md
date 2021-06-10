@@ -1,83 +1,61 @@
-resleeve
-==============================
-
-Assignment for Resleeve
-
-The Assignment
-------------
-- Work with data (wrangling, pre-processing)
-    - Read some images and display them
-    - Have some code for the pre-processing pipeline
-- Modeling (Pytorch/Tensorflow)
-    - Load a pre-trained network and have some code to make predictions
-    - Select a metric and evaluate the pre-trained network on the test dataset
-    - Train your own network (from scratch or using the pre-trained network) on the training dataset
-    - Evaluate your network on the test dataset
-- Bonus: build an API
-- Couple of slides explaining
-    - What did you do?
-    - How you would deploy your model in production?
+## Resleeve Assignment
+Virtual Try On using Generative Adversarial Networks (GANs)
 
 
-Execution
-------------
-- **cp_dataset.py: display()** Read some images and display them
-- **src/data/make_dataset.py** Have some code for the pre-processing pipeline
+---
 
-- **models/cp-vton-plus** Load a pre-trained network  
-- **src/models/predict_model.py** have some code to make predictions
-- **notebooks/reports/0.1/ers/evaluate.ipynb** Select a metric and evaluate the pre-trained network on the test dataset
-- Train your own network (from scratch or using the pre-trained network) on the training dataset
-- Evaluate your network on the test dataset
+*Read some images and display them.*
+- Implemented in display() function in ./src/data/cp_dataset.py
+
+``` $ python src/data/cp_dataset.py  --dataroot 'my/data/root/' ```
+
+---
+
+*Have some code for the pre-processing pipeline*
+- Implemented in CPDataset class in src/data/cp_dataset.py
+- Will preprocess GMM or TOM inputs.
+
+``` CPDataset() ```
+
+---
+
+*Load a pre-trained network* 
+- ./src/models/predict_model.py will load the GMM or TOM networks from ./models/cp-vton-plus
+- load_checkpoint() in ./src/models/networks.py does the job.
+
+``` load_checkpoint(model, opt.checkpoint) ```
+
+---
+
+*Have some code to make predictions*
+- ./src/models/predict_model.py generates predictions from GMM and TOM in test_gmm() and test_tom().
+- The warped clothes (GMM outputs) are stored in ./data/external/test and ./data/results/GMM/test
+- The final transformed images are in ./data/results/TOM/test/try-on
+- The tensorboard outputs are stored in ./tensorboard
+
+``` $ python src/models/predict_model.py --dataroot 'my/data/root/' ```
+
+---
+
+*Select a metric and evaluate the pre-trained network on the test dataset*
+- ./src/data/evaluate_dataset.py creates EvaluateDataset and EvaluateDataLoader classes 
+- These classes load the original and final transformed image from ./data/results/TOM/test
+- The average Structural Similarity Index Measure SSIM is calculated and printed in the main function.
+- The test images have a SSIM of 0.7298
+
+``` $ python evaluate_dataset.py --dataroot 'my/data/root/'```
+
+**Sample output 1**
+    ![Test Image 1](reports/figures/pretrained_result_1.png)
+**Sample output 2**
+    ![Test Image 1](reports/figures/pretrained_result_2.png)
+**Sample output 3**
+    ![Test Image 1](reports/figures/pretrained_result_3.png)
+**Sample output 4**
+    ![Test Image 1](reports/figures/pretrained_result_4.png)
 
 
-Project Organization
-------------
 
-    ├── LICENSE
-    ├── Makefile           <- Makefile with commands like `make data` or `make train`
-    ├── README.md          <- The top-level README for developers using this project.
-    ├── data
-    │   ├── external       <- Data from third party sources.
-    │   ├── interim        <- Intermediate data that has been transformed.
-    │   ├── processed      <- The final, canonical data sets for modeling.
-    │   └── raw            <- The original, immutable data dump.
-    │
-    ├── docs               <- A default Sphinx project; see sphinx-doc.org for details
-    │
-    ├── models             <- Trained and serialized models, model predictions, or model summaries
-    │
-    ├── notebooks          <- Jupyter notebooks. Naming convention is a number (for ordering),
-    │                         the creator's initials, and a short `-` delimited description, e.g.
-    │                         `1.0-jqp-initial-data-exploration`.
-    │
-    ├── references         <- Data dictionaries, manuals, and all other explanatory materials.
-    │
-    ├── reports            <- Generated analysis as HTML, PDF, LaTeX, etc.
-    │   └── figures        <- Generated graphics and figures to be used in reporting
-    │
-    ├── requirements.txt   <- The requirements file for reproducing the analysis environment, e.g.
-    │                         generated with `pip freeze > requirements.txt`
-    │
-    ├── setup.py           <- makes project pip installable (pip install -e .) so src can be imported
-    ├── src                <- Source code for use in this project.
-    │   ├── __init__.py    <- Makes src a Python module
-    │   │
-    │   ├── data           <- Scripts to download or generate data
-    │   │   └── make_dataset.py
-    │   │
-    │   ├── features       <- Scripts to turn raw data into features for modeling
-    │   │   └── build_features.py
-    │   │
-    │   ├── models         <- Scripts to train models and then use trained models to make
-    │   │   │                 predictions
-    │   │   ├── predict_model.py
-    │   │   └── train_model.py
-    │   │
-    │   └── visualization  <- Scripts to create exploratory and results oriented visualizations
-    │       └── visualize.py
-    │
-    └── tox.ini            <- tox file with settings for running tox; see tox.readthedocs.io
 
 
 --------

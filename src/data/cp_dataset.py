@@ -1,9 +1,14 @@
 '''
-Code coming from cp-vton-plus
+    Code coming from cp-vton-plus: https://github.com/minar09/cp-vton-plus
+    License at the root directory.
+
+    Changes:
+        - CPDataset: added transformation_greyscale() to adapt to newer torchvision versions
+        - CPDataLoader: added display() function to visualize a few GMM inputs
+        - main: changed default arguments
 '''
 
 # coding=utf-8
-from click.core import batch
 import torch
 import torch.utils.data as data
 import torchvision.transforms as transforms
@@ -17,16 +22,17 @@ import json
 
 
 class CPDataset(data.Dataset):
-    """Dataset for CP-VTON+.
-    """
+    '''
+        Dataset for CP-VTON+.
+    '''
 
     def __init__(self, 
-        dataroot = "/Users/elizastarr/git/clothing_deep_fakes/data/external", 
-        datamode = "train", 
+        dataroot: str = None, 
+        datamode: str = None, 
         stage = "GMM",
         data_list = "train_pairs.txt",
-        fine_height = 192,
-        fine_width = 256,
+        fine_height = 256,
+        fine_width = 192,
         radius = 3):
 
         super(CPDataset, self).__init__()
@@ -41,7 +47,14 @@ class CPDataset(data.Dataset):
         self.data_path = osp.join(dataroot, datamode)
         self.transform = transforms.Compose([
             transforms.ToTensor(),
-            transforms.Normalize((0.5, 0.5, 0.5), (0.5, 0.5, 0.5))])
+            transforms.Normalize((0.5,0.5,0.5), (0.5,0.5,0.5))])
+        
+        # uncomment when using a newer version of torchvision (google colab)
+        ''' 
+        self.transform_greyscale = transforms.Compose([
+            transforms.ToTensor(),
+            transforms.Normalize(0.5, 0.5)])
+        '''
 
         # load data list
         im_names = []
@@ -148,8 +161,14 @@ class CPDataset(data.Dataset):
             (self.fine_width, self.fine_height), Image.BILINEAR)
         parse_shape_ori = parse_shape_ori.resize(
             (self.fine_width, self.fine_height), Image.BILINEAR)
-        shape_ori = self.transform(parse_shape_ori)  # [-1,1]
-        shape = self.transform(parse_shape)  # [-1,1]
+        
+        try:
+            shape_ori = self.transform_greyscale(parse_shape_ori)  # [-1,1]
+            shape = self.transform_greyscale(parse_shape)  # [-1,1]
+        except AttributeError:
+            shape_ori = self.transform(parse_shape_ori)  # [-1,1]
+            shape = self.transform(parse_shape)  # [-1,1]
+
         phead = torch.from_numpy(parse_head)  # [0,1]
         # phand = torch.from_numpy(parse_hand)  # [0,1]
         pcm = torch.from_numpy(parse_cloth)  # [0,1]
@@ -183,11 +202,18 @@ class CPDataset(data.Dataset):
                                 r, pointy+r), 'white', 'white')
                 pose_draw.rectangle(
                     (pointx-r, pointy-r, pointx+r, pointy+r), 'white', 'white')
-            one_map = self.transform(one_map)
+            try:
+                one_map = self.transform_greyscale(one_map)
+            except AttributeError:
+                one_map = self.transform(one_map)
+
             pose_map[i] = one_map[0]
 
         # just for visualization
-        im_pose = self.transform(im_pose)
+        try:
+            im_pose = self.transform_greyscale(im_pose)
+        except AttributeError:
+            im_pose = self.transform(im_pose)
 
         # cloth-agnostic representation 
         agnostic = torch.cat([shape, im_h, pose_map], 0)
@@ -201,19 +227,19 @@ class CPDataset(data.Dataset):
         pcm.unsqueeze_(0)  # CP-VTON+
 
         result = {
-            'c_name':   c_name,     # for visualization
-            'im_name':  im_name,    # for visualization or ground truth
-            'cloth':    c,          # for input
-            'cloth_mask':     cm,   # for input
-            'image':    im,         # for visualization
-            'agnostic': agnostic,   # for input
-            'parse_cloth': im_c,    # for ground truth
-            'shape': shape,         # for visualization
-            'head': im_h,           # for visualization
-            'pose_image': im_pose,  # for visualization
-            'grid_image': im_g,     # for visualization
-            'parse_cloth_mask': pcm,     # for CP-VTON+, TOM input
-            'shape_ori': shape_ori,     # original body shape without resize
+            'c_name':   c_name,             # for visualization
+            'im_name':  im_name,            # for visualization or ground truth
+            'cloth':    c,                  # for input
+            'cloth_mask':     cm,           # for input
+            'image':    im,                 # for visualization
+            'agnostic': agnostic,           # for input
+            'parse_cloth': im_c,            # for ground truth
+            'shape': shape,                 # for visualization
+            'head': im_h,                   # for visualization
+            'pose_image': im_pose,          # for visualization
+            'grid_image': im_g,             # for visualization
+            'parse_cloth_mask': pcm,        # for CP-VTON+, TOM input
+            'shape_ori': shape_ori,         # original body shape without resize
         }
 
         return result
@@ -227,7 +253,7 @@ class CPDataLoader(object):
         shuffle = True, 
         batch_size = 4, 
         workers = 1, 
-        dataset = CPDataset()):
+        dataset = None):
         super(CPDataLoader, self).__init__()
 
         self.batch_size = batch_size
@@ -253,17 +279,22 @@ class CPDataLoader(object):
 
         return batch
     
+
     def display(self, batch):
-        
-        # Show clothing-agnostic person representation
+        ''' 
+            Show three images and their clothing-agnostic person representations.
+        '''
         import matplotlib.pyplot as plt
 
-        for i in range(min(len(batch), 4)):
+        for i in range( min( len(batch), 2 ) ):
+            print(batch['image'][i].permute(1, 2, 0).size())
             plt.imshow(batch['image'][i].permute(1, 2, 0))
             plt.show()
             
             # pose
-            plt.imshow(batch['pose_image'][i].permute(1, 2, 0))
+            print(batch['pose_image'][i].permute(1, 2, 0).size())
+            a = batch['pose_image'][i].permute(1, 2, 0)
+            plt.imshow(a, cmap='gray')
             plt.show()
             # body shape
             plt.imshow(batch['shape'][i].permute(1, 2, 0))
@@ -271,9 +302,6 @@ class CPDataLoader(object):
             # face and hair regions
             plt.imshow(batch['head'][i].permute(1, 2, 0))
             plt.show()
-            
-            #break
-
 
 
 if __name__ == "__main__":
@@ -281,12 +309,18 @@ if __name__ == "__main__":
 
     import argparse
     parser = argparse.ArgumentParser()
+
+    # dataroot when running locally
     parser.add_argument("--dataroot", default="/Users/elizastarr/git/clothing_deep_fakes/data/external")
+    # dataroot when running in colab
+    #parser.add_argument("--dataroot", default="/content/drive/MyDrive/ColabNotebooks/Resleeve/clothing_deep_fakes/data/external")
+    
     parser.add_argument("--datamode", default="train")
     parser.add_argument("--stage", default="GMM")
     parser.add_argument("--data_list", default="train_pairs.txt")
-    parser.add_argument("--fine_width", type=int, default=192)
     parser.add_argument("--fine_height", type=int, default=256)
+    parser.add_argument("--fine_width", type=int, default=192)
+    
     parser.add_argument("--radius", type=int, default=3)
     parser.add_argument("--shuffle", action='store_true',
                         help='shuffle input data')
@@ -294,6 +328,11 @@ if __name__ == "__main__":
     parser.add_argument('-j', '--workers', type=int, default=1)
 
     opt = parser.parse_args()
+    if opt.datamode=='train':
+        opt.data_list = 'train_pairs.txt'
+    else:
+        opt.data_list = 'test_pairs.txt'
+
     dataset = CPDataset(opt.dataroot, 
         opt.datamode, 
         opt.stage,
@@ -301,16 +340,14 @@ if __name__ == "__main__":
         opt.fine_height,
         opt.fine_width,
         opt.radius)
-    data_loader = CPDataLoader(opt.shuffle, opt.batch_size, opt.workers, dataset)
+    data_loader = CPDataLoader(opt.shuffle, 
+        opt.batch_size, 
+        opt.workers, 
+        dataset)
 
     print('Size of the dataset: %05d, dataloader: %04d'
           % (len(dataset), len(data_loader.data_loader)))
     first_item = dataset.__getitem__(0)
 
-    # Contains 13 keys, each with a list of 4 values
-    first_batch = data_loader.next_batch()
-
-    data_loader.display(first_batch)
-
-    #from IPython import embed
-    #embed()
+    first_batch = data_loader.next_batch()  # Contains 13 keys, each with a list of 4 values
+    data_loader.display(first_batch)  # Preview 2 images from the batch

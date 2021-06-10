@@ -1,5 +1,7 @@
-# Data
+# Folders to ignore
 data/*
+tensorboard/*
+.vscode/*
 
 # Byte-compiled / optimized / DLL files
 __pycache__/
