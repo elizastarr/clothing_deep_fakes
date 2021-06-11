@@ -280,11 +280,13 @@ class CPDataLoader(object):
         return batch
     
 
-    def display(self, batch):
+    def display(self):
         ''' 
-            Show three images and their clothing-agnostic person representations.
+            Show two images and their clothing-agnostic person representations.
         '''
         import matplotlib.pyplot as plt
+
+        batch = self.next_batch()
 
         for i in range( min( len(batch), 2 ) ):
             print(batch['image'][i].permute(1, 2, 0).size())
@@ -350,4 +352,4 @@ if __name__ == "__main__":
     first_item = dataset.__getitem__(0)
 
     first_batch = data_loader.next_batch()  # Contains 13 keys, each with a list of 4 values
-    data_loader.display(first_batch)  # Preview 2 images from the batch
+    data_loader.display()  # Preview 2 images from the batch

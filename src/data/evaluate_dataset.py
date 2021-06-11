@@ -20,8 +20,8 @@ import os.path as osp
 class EvaluateDataset(data.Dataset):
 
     def __init__(self, 
-        dataroot: str = "", 
-        data_list: str = "",
+        dataroot: str = "/Users/elizastarr/git/clothing_deep_fakes/data/results/TOM/test", 
+        data_list: str = "test_pairs.txt",
         fine_height = 256,
         fine_width = 192,
         radius = 3):
@@ -100,6 +100,23 @@ class EvaluateDataLoader(object):
 
         return batch
 
+    def display(self):
+        ''' 
+            Show two images and their translations.
+        '''
+        import matplotlib.pyplot as plt
+
+        batch = self.next_batch()
+
+        for i in range( 2 ):
+            print(batch['image'][i].permute(1, 2, 0).size())
+            plt.imshow(batch['image'][i].permute(1, 2, 0))
+            plt.show()
+            
+            print(batch['try-on'][i].permute(1, 2, 0).size())
+            plt.imshow(batch['try-on'][i].permute(1, 2, 0))
+            plt.show()
+
 
 if __name__ == "__main__":
 
@@ -125,14 +142,18 @@ if __name__ == "__main__":
         opt.fine_height,
         opt.fine_width,
         opt.radius)
-    data_loader = EvaluateDataLoader(batch_size=len(dataset), 
+    data_loader = EvaluateDataLoader(batch_size= 100, #len(dataset), 
         shuffle = opt.shuffle, 
         dataset=dataset)
 
-    batch_whole_dataset = data_loader.next_batch()  # load the entire dataset
+    batch = data_loader.next_batch()  # load the entire dataset
 
-    print("SSIM:", ssim(batch_whole_dataset['image'], batch_whole_dataset['try-on']))  # 0.7298
+
+    print("SSIM:", ssim(batch['image'], batch['try-on']))  # 0.7298
+
+    data_loader.display()
+
 
     # This implementation of IoU is not for this application
-    #print("IoU:", iou(batch_whole_dataset['image'], batch_whole_dataset['try-on'].int()))  # 0.1235
+    #print("IoU:", iou(batch['image'], batch['try-on'].int()))  # 0.1235
 
